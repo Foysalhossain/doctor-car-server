@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion, ObjectId  } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -28,6 +28,8 @@ async function run() {
         await client.connect();
 
         const serviceCollection = client.db('doctorCar').collection('services');
+        // another collection from bookings data
+        const bookingCollection = client.db('doctorCar').collection('bookings');
 
         // find all data from database
         app.get('/services', async (req, res) => {
@@ -39,7 +41,7 @@ async function run() {
         // find single/specific data from database
         app.get('/services/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { _id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
 
             const options = {
                 // If i want a value then i will do  title: 1, and i don't need a value then i will do  title: 0
@@ -47,6 +49,14 @@ async function run() {
             }
 
             const result = await serviceCollection.findOne(query, options);
+            res.send(result);
+        })
+
+        // bookings data / post data  = C = create
+        app.post('/bookings', async (req, res) => {
+            const booking = req.body;
+            console.log(booking);
+            const result = await bookingCollection.insertOne(booking);
             res.send(result);
         })
 
