@@ -45,10 +45,21 @@ async function run() {
 
             const options = {
                 // If i want a value then i will do  title: 1, and i don't need a value then i will do  title: 0
-                projection: { title: 1, price: 1, service_id: 1 }
+                projection: { title: 1, price: 1, service_id: 1, img: 1 }
             }
 
             const result = await serviceCollection.findOne(query, options);
+            res.send(result);
+        })
+
+        // find some data from booking collection
+        app.get('/bookings', async (req, res) => {
+            console.log(req.query);
+            let query = {};
+            if (req.query?.email) {
+                query = { email: req.query.email }
+            }
+            const result = await bookingCollection.find(query).toArray();
             res.send(result);
         })
 
