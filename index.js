@@ -72,8 +72,18 @@ async function run() {
         })
 
         // Update method
-        app.put('bookings/:id', async(req, res) => {
+        app.patch('bookings/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)};
             const updateBooking = req.body;
+            console.log(updateBooking);
+            const updateDoc = {
+                $set: {
+                    status: updateBooking.status
+                },
+            };
+            const result = await bookingCollection.updateOne(filter, updateDoc);
+            res.send(result);
         })
 
         // Delete method
