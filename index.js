@@ -19,6 +19,31 @@ app.use(cookieParser());
 
 console.log(process.env.DB_PASS);
 
+// create middlewares
+const logger = async (req, res, next) => {
+    console.log('called:', req.host, req.originalUrl);
+    next();
+}
+
+const verifyToken = async (req, res, next) => {
+    const token = req.cookies?.token;
+    console.log('value of token in middlewarre', token);
+    if (!token) {
+        return res.status(401).send({ message: 'Not Authorized' })
+    }
+    // jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    //     // error
+    //     if (err) {
+    //         console.log(err);
+    //         return res.status(401).send({ message: 'Unauthorized' })
+    //     }
+    //     // if token is valid then it would be decoded
+    //     console.log('value of the token', decoded);
+    //     req.user=decoded;
+    // })
+    next();
+}
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ci4nuyk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -40,24 +65,24 @@ async function run() {
         const bookingCollection = client.db('doctorCar').collection('bookings');
 
         // Auth related api 
-        app.post('/jwt', async(req, res) => {
+        app.post('/jwt', logger, async (req, res) => {
             const user = req.body;
             console.log(user);
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
                 expiresIn: '1h'
             });
             res
-            // send cookies
-            .cookie('token', token, {
-                httpOnly: true,
-                secure: false
-            })
-            .send({success: true});
+                // send cookies
+                .cookie('token', token, {
+                    httpOnly: true,
+                    secure: false
+                })
+                .send({ success: true });
         })
 
-        // Services related api
         // find all data from database
-        app.get('/services', async (req, res) => {
+        // Services related api
+        app.get('/services', logger, async (req, res) => {
             const cursor = serviceCollection.find();
             const result = await cursor.toArray();
             res.send(result);
@@ -78,9 +103,10 @@ async function run() {
         })
 
         // find some data from booking collection
-        app.get('/bookings', async (req, res) => {
+        app.get('/bookings', logger, verifyToken, async (req, res) => {
             console.log(req.query);
-            console.log('token', req.cookies.token);
+            // console.log('token', req.cookies.token);
+            // console.log('user in the valid token',req.user);
             let query = {};
             if (req.query?.email) {
                 query = { email: req.query.email }
@@ -98,9 +124,9 @@ async function run() {
         })
 
         // Update method
-        app.patch('bookings/:id', async(req, res) => {
+        app.patch('bookings/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)};
+            const filter = { _id: new ObjectId(id) };
             const updateBooking = req.body;
             console.log(updateBooking);
             const updateDoc = {
@@ -113,9 +139,9 @@ async function run() {
         })
 
         // Delete method
-        app.delete('/bookings/:id', async(req, res)=> {
+        app.delete('/bookings/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const result = await bookingCollection.deleteOne(query);
             res.send(result);
         })
